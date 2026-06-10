@@ -163,23 +163,90 @@ def model_label(model_id):
     return str(model_id)
 
 
-def latest_transcript():
-    """Most-recently-modified transcript JSONL under ~/.claude/projects/."""
-    roots = [
+def transcript_roots():
+    return [
         os.path.join(os.path.expanduser("~"), ".claude", "projects"),
         os.path.join(os.path.expanduser("~"), ".config", "claude", "projects"),
     ]
-    best = None
-    best_mtime = -1
-    for root in roots:
+
+
+def all_transcripts():
+    """Every transcript JSONL under the known project roots, newest first."""
+    found = []
+    for root in transcript_roots():
         for path in glob.glob(os.path.join(root, "**", "*.jsonl"), recursive=True):
             try:
-                mt = os.path.getmtime(path)
+                found.append((os.path.getmtime(path), path))
             except Exception:
                 continue
-            if mt > best_mtime:
-                best_mtime, best = mt, path
-    return best
+    found.sort(reverse=True)
+    return [p for _, p in found]
+
+
+def latest_transcript():
+    """Most-recently-modified transcript JSONL under ~/.claude/projects/."""
+    paths = all_transcripts()
+    return paths[0] if paths else None
+
+
+def _read_tail(path, max_bytes=65536):
+    """Return the last <= max_bytes of a file as text, decoded leniently."""
+    try:
+        size = os.path.getsize(path)
+        with open(path, "rb") as fh:
+            if size > max_bytes:
+                fh.seek(size - max_bytes)
+            data = fh.read()
+        return data.decode("utf-8", errors="ignore")
+    except Exception:
+        return ""
+
+
+def transcript_cwd(path):
+    """The most recent `cwd` recorded in a transcript, or None.
+
+    Scans only the tail, so it is cheap even on long transcripts.
+    """
+    tail = _read_tail(path)
+    if not tail:
+        return None
+    for line in reversed(tail.splitlines()):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            obj = json.loads(line)
+        except Exception:
+            continue  # tail may start mid-line; skip the partial
+        if isinstance(obj, dict) and obj.get("cwd"):
+            return obj.get("cwd")
+    return None
+
+
+def latest_transcript_for_cwd(cwd=None):
+    """Newest transcript whose recorded cwd matches `cwd` (default: os.getcwd()).
+
+    This is how `/pages` finds *this* session's transcript instead of whatever
+    project happened to be touched most recently. Returns None if nothing
+    matches, so callers can fall back to `latest_transcript()`.
+    """
+    target = os.path.abspath(cwd or os.getcwd())
+    for path in all_transcripts():  # newest first
+        tc = transcript_cwd(path)
+        if tc and os.path.abspath(tc) == target:
+            return path
+    return None
+
+
+def find_transcript_by_session(session_id):
+    """Locate a transcript file named <session_id>.jsonl under the roots."""
+    if not session_id:
+        return None
+    name = str(session_id) + ".jsonl"
+    for root in transcript_roots():
+        for path in glob.glob(os.path.join(root, "**", name), recursive=True):
+            return path
+    return None
 
 
 def last_model_in_transcript(transcript_path):
@@ -208,9 +275,15 @@ def last_model_in_transcript(transcript_path):
 def session_usage_by_model(transcript_path):
     """Sum input/output tokens per model id across a transcript.
 
-    Returns: { model_id: {"input": int, "output": int} }
-    input  ~= tokens the model read   (prompt, incl. cache reads)
-    output ~= tokens the model wrote  (completion)
+    Returns: { model_id: {"input": int, "cache_read": int, "output": int} }
+
+    input      ~= unique content the model read (fresh prompt tokens +
+                  cache_creation, i.e. content the first time it entered context)
+    cache_read ~= re-reads of already-counted cached context on later turns.
+                  Tracked separately and NOT added to `input`, otherwise a long
+                  session re-counts the same context every turn and the "pages
+                  read" figure balloons into the thousands.
+    output     ~= tokens the model wrote (completion)
     """
     out = {}
     if not transcript_path or not os.path.exists(transcript_path):
@@ -237,10 +310,10 @@ def session_usage_by_model(transcript_path):
         if not isinstance(usage, dict):
             continue
         model = msg.get("model") or "unknown"
-        bucket = out.setdefault(model, {"input": 0, "output": 0})
-        inp = (usage.get("input_tokens", 0) or 0) \
-            + (usage.get("cache_read_input_tokens", 0) or 0) \
+        bucket = out.setdefault(model, {"input": 0, "cache_read": 0, "output": 0})
+        fresh = (usage.get("input_tokens", 0) or 0) \
             + (usage.get("cache_creation_input_tokens", 0) or 0)
-        bucket["input"] += int(inp)
+        bucket["input"] += int(fresh)
+        bucket["cache_read"] += int(usage.get("cache_read_input_tokens", 0) or 0)
         bucket["output"] += int(usage.get("output_tokens", 0) or 0)
     return out

@@ -43,6 +43,7 @@ def build(transcript_path, session_id, cfg):
         label = ptlib.model_label(model_id)
         m = models.setdefault(label, _blank())
         m["session_read_tokens"] += u["input"]
+        m["session_cache_read_tokens"] += u.get("cache_read", 0)
         m["session_write_tokens"] += u["output"]
 
     # ---- file I/O per model ----
@@ -68,7 +69,8 @@ def build(transcript_path, session_id, cfg):
 
 def _blank():
     return {
-        "session_read_tokens": 0, "session_write_tokens": 0,
+        "session_read_tokens": 0, "session_cache_read_tokens": 0,
+        "session_write_tokens": 0,
         "io_read_words": 0, "io_write_words": 0,
         "io_read_files": 0, "io_write_files": 0,
     }
@@ -99,6 +101,9 @@ def render_text(models, cfg, transcript_path, session_id):
         lines.append("   Session tokens")
         lines.append("      read  : {:>9}pg   ({:,} tokens)".format(
             fp(m["session_read_pages"]), m["session_read_tokens"]))
+        if m["session_cache_read_tokens"]:
+            lines.append("              (+{:,} cached re-read tokens, not counted)".format(
+                m["session_cache_read_tokens"]))
         lines.append("      wrote : {:>9}pg   ({:,} tokens)".format(
             fp(m["session_write_pages"]), m["session_write_tokens"]))
         lines.append("   File I/O")
@@ -133,7 +138,15 @@ def main():
 
     cfg = ptlib.load_config()
 
-    transcript_path = args.transcript or ptlib.latest_transcript()
+    # Resolve the transcript for *this* session: an explicit --session wins,
+    # then --transcript, then the newest transcript whose recorded cwd matches
+    # the current directory, and only as a last resort the globally-newest one.
+    if args.session:
+        transcript_path = args.transcript or ptlib.find_transcript_by_session(args.session) \
+            or ptlib.latest_transcript_for_cwd() or ptlib.latest_transcript()
+    else:
+        transcript_path = args.transcript or ptlib.latest_transcript_for_cwd() \
+            or ptlib.latest_transcript()
     session_id = args.session or session_id_from_transcript(transcript_path)
 
     models = build(transcript_path, session_id, cfg)

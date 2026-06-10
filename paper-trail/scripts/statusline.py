@@ -40,18 +40,31 @@ def main():
     else:
         label = ptlib.model_label(model)
 
+    sid = payload.get("session_id") if isinstance(payload, dict) else None
+
     # --- session read/write tokens (live, straight from the payload) ---
     cw = payload.get("context_window") if isinstance(payload, dict) else None
     read_tok = write_tok = None
     if isinstance(cw, dict):
         read_tok = cw.get("total_input_tokens")
         write_tok = cw.get("total_output_tokens")
+        # Exclude re-reads of cached context so "pages read" stays intuitive and
+        # agrees with the /pages report (field name varies across versions).
+        if read_tok is not None:
+            cache_read = (cw.get("cache_read_input_tokens")
+                          or cw.get("total_cache_read_input_tokens")
+                          or cw.get("cached_input_tokens") or 0)
+            read_tok = max(0, read_tok - cache_read)
 
     # Fallback: derive from the transcript if the payload lacks the fields.
     if read_tok is None or write_tok is None:
         tpath = payload.get("transcript_path") if isinstance(payload, dict) else None
+        # Prefer this session's own transcript over the globally-newest one.
+        if not tpath:
+            tpath = ptlib.find_transcript_by_session(sid) \
+                or ptlib.latest_transcript_for_cwd() or ptlib.latest_transcript()
         usage = ptlib.session_usage_by_model(tpath)
-        ri = sum(v["input"] for v in usage.values())
+        ri = sum(v["input"] for v in usage.values())  # fresh reads, cache excluded
         wo = sum(v["output"] for v in usage.values())
         read_tok = ri if read_tok is None else read_tok
         write_tok = wo if write_tok is None else write_tok
@@ -65,7 +78,6 @@ def main():
     ]
 
     # --- live file I/O pages from the hook log ---
-    sid = payload.get("session_id") if isinstance(payload, dict) else None
     if sid:
         events = ptlib.read_io_events(sid)
         if events:
