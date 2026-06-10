@@ -1,0 +1,22 @@
+{
+  "name": "paper-trail-marketplace",
+  "owner": {
+    "name": "Supakit",
+    "email": "supakit.kitj@gmail.com"
+  },
+  "metadata": {
+    "description": "Tools that turn Claude's token usage into human-readable units.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "paper-trail",
+      "source": "./paper-trail",
+      "description": "Turns Claude's reading and writing into pages of paper. Tracks tokens per session and per model from both file I/O and overall session usage, shown live in the statusline and via the /pages report.",
+      "version": "0.1.0",
+      "author": "Ink",
+      "category": "productivity",
+      "tags": ["tokens", "statusline", "metrics", "pages", "usage"]
+    }
+  ]
+}

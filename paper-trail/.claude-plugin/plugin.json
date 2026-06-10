@@ -1,0 +1,10 @@
+{
+  "name": "paper-trail",
+  "version": "0.1.0",
+  "description": "Turns Claude's reading and writing into pages of paper. Tracks tokens per session and per model from both file I/O (Read/Write/Edit) and overall session usage, then converts to page counts shown live in the statusline and via the /pages report.",
+  "author": {
+    "name": "Ink"
+  },
+  "keywords": ["tokens", "statusline", "metrics", "pages", "usage"],
+  "license": "MIT"
+}
