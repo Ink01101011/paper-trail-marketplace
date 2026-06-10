@@ -39,9 +39,8 @@ report shows both:
    numbers.
 
 3. If the user asks to change the conversion (e.g. words per page), edit
-   `~/.claude/paper-trail/config.json`. Keys: `words_per_page` (default 250),
-   `words_per_token` (default 0.75), `chars_per_token` (default 4). Re-run the
-   report afterward.
+   `~/.claude/paper-trail/config.json`. Keys: `words_per_page` (default 250)
+   and `words_per_token` (default 0.75). Re-run the report afterward.
 
 ## Notes
 

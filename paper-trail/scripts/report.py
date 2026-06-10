@@ -76,7 +76,7 @@ def _blank():
     }
 
 
-def render_text(models, cfg, transcript_path, session_id):
+def render_text(models, cfg, transcript_path, session_id, io_logged=True):
     fp = ptlib.fmt_pages
     wpp = cfg["words_per_page"]
     tpp = (wpp / cfg["words_per_token"]) if cfg["words_per_token"] else wpp
@@ -126,6 +126,10 @@ def render_text(models, cfg, transcript_path, session_id):
         fp(tot_pages["sr"]), fp(tot_pages["sw"])))
     lines.append("   File I/O : read {}pg · wrote {}pg".format(
         fp(tot_pages["ir"]), fp(tot_pages["iw"])))
+    if not io_logged:
+        lines.append("")
+        lines.append("   ⓘ No file-I/O logged for this session yet. The PostToolUse")
+        lines.append("     hook starts recording after /reload-plugins or a restart.")
     return "\n".join(lines)
 
 
@@ -150,16 +154,18 @@ def main():
     session_id = args.session or session_id_from_transcript(transcript_path)
 
     models = build(transcript_path, session_id, cfg)
+    io_logged = ptlib.io_log_exists(session_id)
 
     if args.json:
         print(json.dumps({
             "config": cfg,
             "transcript": transcript_path,
             "session_id": session_id,
+            "io_logged": io_logged,
             "models": models,
         }, indent=2))
     else:
-        print(render_text(models, cfg, transcript_path, session_id))
+        print(render_text(models, cfg, transcript_path, session_id, io_logged))
 
 
 if __name__ == "__main__":

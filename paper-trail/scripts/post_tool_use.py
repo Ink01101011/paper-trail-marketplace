@@ -102,8 +102,8 @@ def main():
     if direction is None:
         return
 
-    cfg = ptlib.load_config()
     ptlib.ensure_config_file()
+    ptlib.ensure_statusline_launcher()
 
     model = ptlib.last_model_in_transcript(transcript_path) or "unknown"
     fp = tool_input.get("file_path") if isinstance(tool_input, dict) else None
@@ -116,7 +116,6 @@ def main():
         "file": fp,
         "chars": len(text),
         "words": ptlib.count_words(text),
-        "tokens_est": ptlib.est_tokens_from_text(text, cfg),
     }
     ptlib.append_io_event(session_id, record)
 

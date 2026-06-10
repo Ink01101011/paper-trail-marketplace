@@ -1,7 +1,7 @@
 {
   "name": "paper-trail",
-  "version": "0.1.0",
-  "description": "Turns Claude's reading and writing into pages of paper. Tracks tokens per session and per model from both file I/O (Read/Write/Edit) and overall session usage, then converts to page counts shown live in the statusline and via the /pages report.",
+  "version": "0.2.0",
+  "description": "Turns Claude's reading and writing into pages of paper. Tracks tokens per session and per model from both file I/O (Read/Write/Edit) and overall session usage, then converts to page counts reported via /pages, with an optional live statusline.",
   "author": {
     "name": "Ink"
   },

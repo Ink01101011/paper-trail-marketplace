@@ -50,19 +50,22 @@ your **`~/.claude/settings.json`**:
 {
   "statusLine": {
     "type": "command",
-    "command": "python3 \"$HOME/.claude/plugins/cache/paper-trail/paper-trail/0.1.0/scripts/statusline.py\"",
+    "command": "sh \"$HOME/.claude/paper-trail/statusline.sh\"",
     "padding": 0
   }
 }
 ```
 
-> **Important:** `${CLAUDE_PLUGIN_ROOT}` is *not* expanded inside
-> `statusLine.command` (Claude Code issue #52079), so use the real absolute
-> path to the installed script. A marketplace install lands under
-> `~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`, so the path
-> above includes the `0.1.0` version segment — update it when the plugin
-> version bumps (run `ls ~/.claude/plugins/cache/paper-trail/paper-trail`
-> to see the installed version).
+`statusline.sh` is a tiny launcher the plugin writes to this fixed path and
+keeps pointed at the newest installed version — so the line above **never has
+to change when the plugin updates**. It is created the first time the
+`PostToolUse` hook runs (use Read/Write/Edit once, or run `/pages`); until then
+the statusline stays blank.
+
+> Why a launcher? `${CLAUDE_PLUGIN_ROOT}` is *not* expanded inside
+> `statusLine.command` (Claude Code issue #52079), and the real install path
+> carries a version segment that changes on every update. The launcher resolves
+> the current version at runtime so you don't have to hand-edit settings.json.
 
 Live output looks like:
 
@@ -77,8 +80,7 @@ On first run the plugin writes `~/.claude/paper-trail/config.json`:
 ```json
 {
   "words_per_page": 250,
-  "words_per_token": 0.75,
-  "chars_per_token": 4
+  "words_per_token": 0.75
 }
 ```
 
@@ -86,7 +88,6 @@ On first run the plugin writes `~/.claude/paper-trail/config.json`:
   printed page.
 - `words_per_token` — how token counts map to words (~0.75 for English).
   Together with `words_per_page` this sets tokens/page.
-- `chars_per_token` — fallback estimate when only a character count is known.
 
 Edit the file and the change applies to the next report / statusline refresh.
 
@@ -94,18 +95,20 @@ Edit the file and the change applies to the next report / statusline refresh.
 
 - **Live counter:** glance at the statusline (once enabled).
 - **Full report:** `/pages`, or "show my page count", "how many pages did you
-  write this session". Add detail by running the engine directly:
+  write this session". Add detail by running the engine directly (resolve the
+  installed path without pinning a version):
 
   ```bash
-  python3 "$HOME/.claude/plugins/cache/paper-trail/paper-trail/0.1.0/scripts/report.py" --json
-  python3 "$HOME/.claude/plugins/cache/paper-trail/paper-trail/0.1.0/scripts/report.py" --transcript /path/to/session.jsonl
+  DIR=$(ls -d "$HOME"/.claude/plugins/cache/paper-trail/paper-trail/*/scripts | sort -V | tail -1)
+  python3 "$DIR/report.py" --json
+  python3 "$DIR/report.py" --transcript /path/to/session.jsonl
   ```
 
 ## Data & privacy
 
 Everything stays local under `~/.claude/paper-trail/`. The hook stores only
-counts (chars, words, token estimates), the file path, the tool name, and the
-model id — never file contents. Delete the folder any time to reset.
+counts (chars, words), the file path, the tool name, and the model id — never
+file contents. Delete the folder any time to reset.
 
 ## Requirements
 

@@ -32,6 +32,7 @@ def main():
             payload = {}
 
     cfg = ptlib.load_config()
+    ptlib.ensure_statusline_launcher()  # keep the stable launcher current
 
     # --- model label ---
     model = payload.get("model") if isinstance(payload, dict) else None
