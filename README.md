@@ -7,27 +7,29 @@ A Claude Code plugin marketplace. Currently ships one plugin:
 
 ## Install
 
-This is a local marketplace (the plugin folder sits next to
-`.claude-plugin/marketplace.json`).
+Add the marketplace from GitHub, then install the plugin:
+
+```
+/plugin marketplace add Ink01101011/paper-trail-marketplace
+/plugin install paper-trail@paper-trail
+```
+
+(The marketplace is named `paper-trail`, hence the `@paper-trail` suffix — the
+`paper-trail-marketplace` in the `add` command is just the GitHub repo name.)
+
+Working from a local checkout instead? Point `marketplace add` at the
+**directory** that contains `.claude-plugin/marketplace.json` (not the file
+itself):
 
 ```
 /plugin marketplace add /absolute/path/to/paper-trail-marketplace
-/plugin install paper-trail@paper-trail-marketplace
-```
-
-Point `marketplace add` at the **directory** that contains
-`.claude-plugin/marketplace.json`, not the file itself.
-
-To publish it instead, push this folder to a git repo and add it by URL:
-
-```
-/plugin marketplace add your-org/paper-trail-marketplace
+/plugin install paper-trail@paper-trail
 ```
 
 Refresh after changes:
 
 ```
-/plugin marketplace update paper-trail-marketplace
+/plugin marketplace update paper-trail
 ```
 
 ## Layout

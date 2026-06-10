@@ -26,9 +26,14 @@ Default conversion: **250 words/page** (~333 tokens/page). Fully configurable.
 
 ### 1. Install the plugin
 
-Accept the `.plugin` file in Cowork, or drop the `paper-trail` folder into your
-plugins directory. The hook and the `/pages` skill work immediately — no
-configuration required.
+Add the marketplace, then install the plugin:
+
+```
+/plugin marketplace add Ink01101011/paper-trail-marketplace
+/plugin install paper-trail@paper-trail
+```
+
+The hook and the `/pages` skill work immediately — no configuration required.
 
 Try it:
 
@@ -45,7 +50,7 @@ your **`~/.claude/settings.json`**:
 {
   "statusLine": {
     "type": "command",
-    "command": "python3 \"$HOME/.claude/plugins/paper-trail/scripts/statusline.py\"",
+    "command": "python3 \"$HOME/.claude/plugins/cache/paper-trail/paper-trail/0.1.0/scripts/statusline.py\"",
     "padding": 0
   }
 }
@@ -53,8 +58,11 @@ your **`~/.claude/settings.json`**:
 
 > **Important:** `${CLAUDE_PLUGIN_ROOT}` is *not* expanded inside
 > `statusLine.command` (Claude Code issue #52079), so use the real absolute
-> path to the installed script. If your plugin lives elsewhere, point the
-> command at that copy of `scripts/statusline.py`.
+> path to the installed script. A marketplace install lands under
+> `~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`, so the path
+> above includes the `0.1.0` version segment — update it when the plugin
+> version bumps (run `ls ~/.claude/plugins/cache/paper-trail/paper-trail`
+> to see the installed version).
 
 Live output looks like:
 
@@ -89,8 +97,8 @@ Edit the file and the change applies to the next report / statusline refresh.
   write this session". Add detail by running the engine directly:
 
   ```bash
-  python3 "$HOME/.claude/plugins/paper-trail/scripts/report.py" --json
-  python3 "$HOME/.claude/plugins/paper-trail/scripts/report.py" --transcript /path/to/session.jsonl
+  python3 "$HOME/.claude/plugins/cache/paper-trail/paper-trail/0.1.0/scripts/report.py" --json
+  python3 "$HOME/.claude/plugins/cache/paper-trail/paper-trail/0.1.0/scripts/report.py" --transcript /path/to/session.jsonl
   ```
 
 ## Data & privacy
